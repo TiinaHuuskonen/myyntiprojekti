@@ -5,45 +5,22 @@
 <head>
 <meta charset="ISO-8859-1">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="css/main.css">
 <title>Asiakas Lista</title>
-<style>
-	#lista {
-	border: 1px solid;
-	border-collapse: collapse;
-	}
-	#lista tr:nth-child(even){
-	background-color: #f2f2f2;
-	}
 
-	#lista tr:hover {background-color: #ddd;
-	}
 	
-	th {
-	background-color: powderblue;
-	border: 1px solid;
-	border-collapse: collapse;
-	padding: 5px;
-	text-align: left;
-	}
-	
-	td {
-	border: 1px solid;
-	border-collapse: collapse;
-	padding: 5px;
-	}
-	#hakunappi {
-	font-weight: bold;
-	}
-	#hakunappi: hover {background-color: #ddd;}
-	
-</style>
+
 </head>
 <body>
 	<table id="lista">
 		<thead>
+		<tr>
+			<th colspan="5" class="oikealle"><span id="uusiAsiakas">Lisää uusi asiakas</span></th>
+		</tr>	
+		
 			<tr>
 			<th>Hakusana:</th>
-			<th colspan="2"><input type="text" id="hakusana"></th>
+			<th colspan="3"><input type="text" id="hakusana"></th>
 			<th><input type="button" value="Hae" id="hakunappi"></th>
 			</tr>
 			<tr>
@@ -51,6 +28,7 @@
 				<th>Sukunimi</th>
 				<th>Puhelin</th>
 				<th>Sähköposti</th>
+				<th></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -60,12 +38,15 @@
 <script>
 $(document).ready(function() {
 	
+	$("#uusiAsiakas").click(function(){
+		document.location="lisaaasiakas.jsp";
+	});
 	haeAsiakkaat();
 	$("#hakunappi").click(function(){
 		console.log($("#hakusana").val());
 		haeAsiakkaat();
 	});
-	$(document.body).on("keydown", function(){
+	$(document.body).on("keydown", function(event){
 		if(event.which==13){
 			haeAsiakkaat();
 		}
@@ -82,18 +63,32 @@ function haeAsiakkaat(){
 		success:function(result) {
 			$.each(result.asiakkaat, function(i, field) {
 				var htmlStr;
-				htmlStr+="<tr>";
+				htmlStr+="<tr id='rivi "+field.etunimi+"'>";
 				htmlStr+= "<td>"+field.etunimi+"</td>";
 				htmlStr+= "<td>"+field.sukunimi+"</td>";
 				htmlStr+= "<td>"+field.puhelin+"</td>";
 				htmlStr+= "<td>"+field.sposti+"</td>";
+				htmlStr+= "<td><span class='poista' onclick=poista('"+field.etunimi+"')>Poista</span></td>";
 				htmlStr+="</tr>";
 				$("#lista tbody").append(htmlStr);
 			});
 		}
 	});	
 }
-
+function poista(etunimi) {
+	if(confirm("Poista asiakas " + etunimi +"?")){
+		$.ajax({url:"asiakkaat/"+etunimi, type:"DELETE", dataType:"json", success:function(result) { 
+	        if(result.response==0){
+	        	$("#ilmo").html("Asiakkaan poisto epäonnistui.");
+	        }else if(result.response==1){
+	        	$("#rivi_"+etunimi).css("background-color", "red"); 
+	        	alert("Asiakkaan " + etunimi +" poisto onnistui.");
+				haeAsiakkaat();        	
+			}
+	    }});
+		
+	}
+}
 </script>
 
 </body>

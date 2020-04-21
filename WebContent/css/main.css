@@ -1,0 +1,48 @@
+@charset "ISO-8859-1";
+
+#lista {
+	border: 1px solid;
+	border-collapse: collapse;
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	}
+	#lista tr:nth-child(even){
+	background-color: #f2f2f2;
+	}
+
+	#lista tr:hover {background-color: #ddd;
+	}
+	
+	th {
+	background-color: powderblue;
+	border: 1px solid;
+	border-collapse: collapse;
+	padding: 5px;
+	text-align: left;
+	}
+.poista {
+	color: red;
+	text-decoration: underline;
+	cursor: pointer;	
+}
+
+.oikealle{
+	text-align: right;	
+	
+}
+
+#uusiAsiakas, #takaisin{
+	color: white;	
+	cursor: pointer;	
+}
+	
+	
+	td {
+	border: 1px solid;
+	border-collapse: collapse;
+	padding: 5px;
+	}
+	#hakunappi {
+	font-weight: bold;
+	cursor: pointer;
+	}
+	#hakunappi: hover {background-color: #ddd;}
