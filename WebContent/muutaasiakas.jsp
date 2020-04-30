@@ -5,17 +5,16 @@
 <head>
 <meta charset="ISO-8859-1">
 <script src="scripts/main.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-<script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.15.0/jquery.validate.min.js"></script>
 <link rel="stylesheet" type="text/css" href="css/main.css")>
 <title>Muuta tiedot</title>
 </head>
-<body>
+<body onkeydown="tutkiKey(event)">
 	<form id="tiedot">
 	<table>
 		<thead>	
-			<tr>
-				<th colspan="5" class="oikealle"><span id="takaisin">Takaisin listaukseen</span></th>
+			<tr>	
+				<th colspan="3" id="ilmo"></th>
+				<th colspan="2" class="oikealle"><a href="listaaasiakkaat.jsp" id="takaisin">Takaisin listaukseen</a></th>
 			</tr>		
 			<tr>
 				<th>Etunimi</th>
@@ -31,7 +30,7 @@
 				<td><input type="text" name="sukunimi" id="sukunimi"></td>
 				<td><input type="text" name="puhelin" id="puhelin"></td>
 				<td><input type="text" name="sposti" id="sposti"></td> 
-				<td><input type="submit" id="tallenna" value="Hyväksy"></td>
+				<td><input type="button" id="tallenna" value="Hyväksy" onclick="vieTiedot()"></td>
 			</tr>
 		</tbody>
 	</table>
@@ -40,73 +39,77 @@
 <span id="ilmo"></span>
 </body>
 <script>
-$(document).ready(function(){
-	$("#takaisin").click(function(){
-		document.location="listaaasiakkaat.jsp";
-	});
-var etunimi  = requestURLParam("etunimi");	
-	$.ajax({url:"asiakkaat/haeyksi/"+etunimi,type:"GET", dataType: "json", success:function(result){
-		$("#vanhaetunimi").val(result.etunimi);
-		$("#etunimi").val(result.etunimi);
-		$("#sukunimi").val(result.sukunimi);
-		$("#puhelin").val(result.puhelin);
-		$("#sposti").val(result.sposti);
-	}});
-	$("#tiedot").validate({
-		rules: {
-			etunimi: {
-				required: true,
-				minlength: 2
-			},
-			sukunimi: {
-				required: true,
-				minlength: 2
-			},
-			puhelin: {
-				required: true,
-				number: true,
-				minlength: 8
-			},
-			sposti: {
-				required: true,
-				minlength: 8
-			}
-		},
-		messages: {
-			etunimi: {
-				required: "Lisää etunimi",
-				minlength: "Liian lyhyt"
-			},
-			sukunimi: {
-				required: "Lisää sukunimi",
-				minlength: "Liian lyhyt"
-			},
-			puhelin: {
-				required: "Lisää puhelin",
-				number: "Ei kelpaa numeroksi",
-				minlength: "Liian lyhyt numero"
-			},
-			sposti: {
-				required: "Lisää sähköposti",
-				minlength: "Liian lyhyt osoite"
-			}
-		},
-		submitHandler: function(form){
-			paivitaTiedot();
+
+function tutkiKey(event){
+	if(event.keyCode==13){
+		vieTiedot();
+	}		
+}
+
+
+document.getElementById("etunimi").focus();
+
+
+var etunimi = requestURLParam("etunimi"); 
+fetch("asiakkaat/haeyksi/" + etunimi,{
+      method: 'GET'	      
+    })
+.then( function (response) {
+	return response.json()
+})
+.then( function (responseJson) {
+	console.log(responseJson);
+	document.getElementById("etunimi").value = responseJson.etunimi;		
+	document.getElementById("sukunimi").value = responseJson.sukunimi;	
+	document.getElementById("puhelin").value = responseJson.puhelin;	
+	document.getElementById("sposti").value = responseJson.sposti;	
+	document.getElementById("vanhaetunimi").value = responseJson.etunimi;	
+});	
+
+
+function vieTiedot(){
+	console.log("Vie tiedot")
+	var ilmo="";
+	if(document.getElementById("etunimi").value.length<2){
+		ilmo="Nimi ei kelpaa!";		
+	}else if(document.getElementById("sukunimi").value.length<2){
+		ilmo="Sukunimi ei kelpaa!";		
+	}else if(document.getElementById("puhelin").value.length<7){
+		ilmo="Numero ei kelpaa!";		
+	}else if(document.getElementById("sposti").value.length<7){
+		ilmo="Tarkista sähköposti";		
+	}		
+
+	if(ilmo!=""){
+		document.getElementById("ilmo").innerHTML=ilmo;
+		setTimeout(function(){ document.getElementById("ilmo").innerHTML=""; }, 3000);
+
 		}
-	});
-});
-	function paivitaTiedot(){	
-		var formJsonStr = formDataJsonStr($("#tiedot").serializeArray()); //muutetaan lomakkeen tiedot json-stringiksi
-		$.ajax({url:"asiakkaat", data:formJsonStr, type:"PUT", dataType:"json", success:function(result) { //result on joko {"response:1"} tai {"response:0"}       
-			if(result.response==0){
-	      	$("#ilmo").html("Asiakastietojen päivittäminen epäonnistui.");
-	      }else if(result.response==1){			
-	      	$("#ilmo").html("Asiakastietojen päivittäminen onnistui.");
-	      	$("#etunimi", "#sukunimi", "#puhelin", "#sposti").val("");
-		  }
-	  
-	  }});	
-	}
+	document.getElementById("etunimi").value=siivoa(document.getElementById("etunimi").value);
+	document.getElementById("sukunimi").value=siivoa(document.getElementById("sukunimi").value);
+	document.getElementById("puhelin").value=siivoa(document.getElementById("puhelin").value);
+	document.getElementById("sposti").value=siivoa(document.getElementById("sposti").value);	
+	
+	var formJsonStr=formDataToJSON(document.getElementById("tiedot"));
+	console.log(formJsonStr);
+
+	fetch("asiakkaat",{
+	      method: 'PUT',
+	      body:formJsonStr
+	    })
+	.then(function (response) {
+		return response.json();
+	})
+	.then(function (responseJson) {
+		var vastaus = responseJson.response;		
+		if(vastaus==0){
+			document.getElementById("ilmo").innerHTML= "Tietojen päivitys epäonnistui";
+        }else if(vastaus==1){	        	
+        	document.getElementById("ilmo").innerHTML= "Tietojen päivitys onnistui";			      	
+		}	
+		setTimeout(function(){ document.getElementById("ilmo").innerHTML=""; }, 5000);
+	});	
+	document.getElementById("tiedot").reset(); 
+}	
 	</script>
 </html>

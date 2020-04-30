@@ -4,24 +4,24 @@
 <html>
 <head>
 <meta charset="ISO-8859-1">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <link rel="stylesheet" type="text/css" href="css/main.css">
+<script src="scripts/main.js"></script>
 <title>Asiakas Lista</title>
 
-	
 
 </head>
-<body>
+<body onkeydown="tutkiKey(event)">
 	<table id="lista">
 		<thead>
 		<tr>
-			<th colspan="5" class="oikealle"><span id="uusiAsiakas">Lisää uusi asiakas</span></th>
+			<th colspan="4" id="ilmo"></th>
+					<th><a id="uusiAsiakas" href="lisaaasiakas.jsp">Lisää uusi asiakas</a></th>
 		</tr>	
 		
 			<tr>
 			<th>Hakusana:</th>
 			<th colspan="3"><input type="text" id="hakusana"></th>
-			<th><input type="button" value="Hae" id="hakunappi"></th>
+			<th><input type="button" value="Hae" id="hakunappi" onclick="haeTiedot()"></th>
 			</tr>
 			<tr>
 				<th>Etunimi</th>
@@ -31,64 +31,63 @@
 				<th></th>
 			</tr>
 		</thead>
-		<tbody>
-		
+			<tbody id="tbody">
 		</tbody>
 	</table>
 <script>
-$(document).ready(function() {
-	
-	$("#uusiAsiakas").click(function(){
-		document.location="lisaaasiakas.jsp";
-	});
-	
-	haeAsiakkaat();
-	$("#hakunappi").click(function(){
-		console.log($("#hakusana").val());
-		haeAsiakkaat();
-	});
-	$(document.body).on("keydown", function(event){
-		if(event.which==13){
-			haeAsiakkaat();
-		}
-	});
-	$("#hakusana").focus();
-});
-
-function haeAsiakkaat(){
-	$("#lista tbody").empty();
-	$.ajax({
-		url:"asiakkaat/"+$("#hakusana").val(),
-		type:"GET",
-		dataType:"json",
-		success:function(result) {
-			$.each(result.asiakkaat, function(i, field) {
-				var htmlStr;
-				htmlStr+="<tr id='rivi "+field.etunimi+"'>";
-				htmlStr+= "<td>"+field.etunimi+"</td>";
-				htmlStr+= "<td>"+field.sukunimi+"</td>";
-				htmlStr+= "<td>"+field.puhelin+"</td>";
-				htmlStr+= "<td>"+field.sposti+"</td>";
-				htmlStr+= "<td><a href='muutaasiakas.jsp?etunimi="+field.etunimi+"'>Muuta</a>&nbsp;";
-				htmlStr+= "<span class='poista' onclick=poista('"+field.etunimi+"')>Poista</span></td>";
-				htmlStr+="</tr>";
-				$("#lista tbody").append(htmlStr);
-			});
-		}
-	});	
+haeTiedot();	
+document.getElementById("hakusana").focus();
+function tutkiKey(event){
+	if(event.keyCode==13){//Enter
+		haeTiedot();
+	}		
 }
-function poista(etunimi) {
-	if(confirm("Poista asiakas " + etunimi +"?")){
-		$.ajax({url:"asiakkaat/"+etunimi, type:"DELETE", dataType:"json", success:function(result) { 
-	        if(result.response==0){
-	        	$("#ilmo").html("Asiakkaan poisto epäonnistui.");
-	        }else if(result.response==1){
-	        	$("#rivi_"+etunimi).css("background-color", "red"); 
-	        	alert("Asiakkaan " + etunimi +" poisto onnistui.");
-				haeAsiakkaat();        	
-			}
-	    }});
-	}
+
+function haeTiedot(){	
+	document.getElementById("tbody").innerHTML = "";
+	fetch("asiakkaat/" + document.getElementById("hakusana").value,{
+	      method: 'GET'
+	    })
+	.then(function (response) {
+		return response.json()	
+	})
+	.then(function (responseJson) {	
+		var asiakkaat = responseJson.asiakkaat;	
+		var htmlStr="";
+		for(var i=0;i<asiakkaat.length;i++){			
+        	htmlStr+="<tr>";
+        	htmlStr+="<td>"+asiakkaat[i].etunimi+"</td>";
+        	htmlStr+="<td>"+asiakkaat[i].sukunimi+"</td>";
+        	htmlStr+="<td>"+asiakkaat[i].puhelin+"</td>";
+        	htmlStr+="<td>"+asiakkaat[i].sposti+"</td>";  
+        	htmlStr+="<td><a href='muutaasiakas.jsp?etunimi="+asiakkaat[i].etunimi+"'>Muuta</a>&nbsp;";
+        	htmlStr+="<span class='poista' onclick=poista('"+asiakkaat[i].etunimi+"')>Poista</span></td>";
+        	htmlStr+="</tr>";        	
+		}
+		document.getElementById("tbody").innerHTML = htmlStr;		
+	})	
+}
+
+
+function poista(etunimi){
+	if(confirm("Poista asiakas " + etunimi +"?")){	
+		fetch("asiakkaat/"+ etunimi,{
+		      method: 'DELETE'		      	      
+		    })
+		.then(function (response) {
+			return response.json()
+		})
+		.then(function (responseJson) {		
+			var vastaus = responseJson.response;		
+			if(vastaus==0){
+				document.getElementById("ilmo").innerHTML= "Asiakkaan poistaminen onnistui.";
+	        }else if(vastaus==1){	        	
+	        	document.getElementById("ilmo").innerHTML="Asiakkaan " + etunimi +" poisto onnistui.";
+				haeTiedot();        	
+			}	
+			setTimeout(function(){ document.getElementById("ilmo").innerHTML=""; }, 5000);
+		})		
+	}	
 }
 </script>
 
